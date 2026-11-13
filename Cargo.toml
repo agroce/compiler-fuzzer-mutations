@@ -1,0 +1,24 @@
+[package]
+name = "compiler-fuzzer-mutations"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93"
+authors = ["Alex Groce"]
+description = "Mutation-testing-style source mutations for LibAFL, from afl-compiler-fuzzer, for fuzzing compilers and interpreters"
+repository = "https://github.com/agroce/compiler-fuzzer-mutations"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["fuzzing", "libafl", "compiler", "mutation-testing", "mutator"]
+categories = ["development-tools::testing", "no-std"]
+exclude = [".github"]
+
+[dependencies]
+libafl = { version = "0.16", default-features = false }
+libafl_bolts = { version = "0.16", default-features = false }
+
+[dev-dependencies]
+clap = { version = "4.5.18", features = ["derive"] }
+env_logger = "0.11.5"
+libafl = { version = "0.16", features = ["std", "derive"] }
+libafl_bolts = "0.16"
+nix = { version = "0.31.2", features = ["signal"] }
