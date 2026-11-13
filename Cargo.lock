@@ -250,6 +250,7 @@ dependencies = [
  "env_logger",
  "libafl",
  "libafl_bolts",
+ "log",
  "nix",
 ]
 

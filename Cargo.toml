@@ -12,9 +12,15 @@ keywords = ["fuzzing", "libafl", "compiler", "mutation-testing", "mutator"]
 categories = ["development-tools::testing", "no-std"]
 exclude = [".github"]
 
+[features]
+default = ["comby"]
+## CombyMutator, a client for comby-decomposer servers (needs std).
+comby = ["dep:log"]
+
 [dependencies]
 libafl = { version = "0.16", default-features = false }
 libafl_bolts = { version = "0.16", default-features = false }
+log = { version = "0.4", optional = true }
 
 [dev-dependencies]
 clap = { version = "4.5.18", features = ["derive"] }
@@ -22,3 +28,7 @@ env_logger = "0.11.5"
 libafl = { version = "0.16", features = ["std", "derive"] }
 libafl_bolts = "0.16"
 nix = { version = "0.31.2", features = ["signal"] }
+
+[[example]]
+name = "forkserver"
+required-features = ["comby"]

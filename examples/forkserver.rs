@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::path::PathBuf;
 
 use clap::Parser;
-use compiler_fuzzer_mutations::MutationTestingMutator;
+use compiler_fuzzer_mutations::{CombyMutator, DEFAULT_COMBY_PORT, MutationTestingMutator};
 use libafl::{
     corpus::{Corpus, InMemoryCorpus, OnDiskCorpus},
     events::SimpleEventManager,
@@ -72,6 +72,24 @@ struct Opt {
     source_prob: f32,
 
     #[arg(
+        help = "Fraction of stacked havoc steps that ask a comby-decomposer server for a new program (0: off)",
+        short = 'c',
+        long = "comby-prob",
+        default_value = "0"
+    )]
+    comby_prob: f32,
+
+    #[arg(
+        help = "comby-decomposer server host",
+        long = "comby-host",
+        default_value = "127.0.0.1"
+    )]
+    comby_host: String,
+
+    #[arg(help = "comby-decomposer server port", long = "comby-port", default_value_t = DEFAULT_COMBY_PORT)]
+    comby_port: u16,
+
+    #[arg(
         help = "Arguments passed to the target",
         name = "arguments",
         num_args(1..),
@@ -95,8 +113,8 @@ pub fn main() {
 
     let opt = Opt::parse();
     assert!(
-        (0.0..=1.0).contains(&opt.source_prob),
-        "--source-prob must be between 0 and 1"
+        opt.source_prob >= 0.0 && opt.comby_prob >= 0.0 && opt.source_prob + opt.comby_prob <= 1.0,
+        "--source-prob and --comby-prob must be at least 0, and add up to at most 1"
     );
 
     let corpus_dirs: Vec<PathBuf> = [opt.in_dir].to_vec();
@@ -204,15 +222,17 @@ pub fn main() {
         println!("We imported {} inputs from disk.", state.corpus().count());
     }
 
-    // The source-level operators plus ordinary havoc, as in afl-compiler-fuzzer:
-    // each stacked step is a source mutation with probability `source_prob`,
-    // and otherwise one of the havoc mutations, chosen uniformly.
-    let mutations = tuple_list!(MutationTestingMutator::new()).merge(havoc_mutations());
-    let havoc_count = mutations.len() - 1;
+    // The source-level operators, the comby server, and ordinary havoc, as in
+    // afl-compiler-fuzzer: each stacked step is a source mutation with
+    // probability `source_prob`, a request to the comby server with probability
+    // `comby_prob`, and otherwise one of the havoc mutations, chosen uniformly.
+    let comby = CombyMutator::new(&opt.comby_host, opt.comby_port).unwrap();
+    let mutations = tuple_list!(MutationTestingMutator::new(), comby).merge(havoc_mutations());
+    let havoc_count = mutations.len() - 2;
     let mutator = TuneableScheduledMutator::new(&mut state, mutations);
-    let mut probabilities = vec![opt.source_prob];
+    let mut probabilities = vec![opt.source_prob, opt.comby_prob];
     probabilities.extend(std::iter::repeat_n(
-        (1.0 - opt.source_prob) / havoc_count as f32,
+        (1.0 - opt.source_prob - opt.comby_prob) / havoc_count as f32,
         havoc_count,
     ));
     mutator

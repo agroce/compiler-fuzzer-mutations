@@ -29,6 +29,11 @@
 //!
 //! Matching is textual: delimiters are not nesting-aware, and delimited spans
 //! are limited to [`MAX_MUTANT_CHANGE`] bytes.
+//!
+//! With the `comby` feature (on by default; it needs `std`), [`CombyMutator`]
+//! adds afl-compiler-fuzzer's other mode: replacing the input with a program
+//! from a [comby-decomposer](https://github.com/comby-tools/comby-decomposer)
+//! server.
 
 #![no_std]
 
@@ -46,6 +51,14 @@ use libafl::{
     state::{HasMaxSize, HasRand},
 };
 use libafl_bolts::{Named, rands::Rand};
+
+#[cfg(feature = "comby")]
+extern crate std;
+
+#[cfg(feature = "comby")]
+pub mod comby;
+#[cfg(feature = "comby")]
+pub use comby::{CombyMutator, DEFAULT_COMBY_PORT};
 
 /// Maximum length, in bytes, of a span matched by a delimiter-based operator.
 pub const MAX_MUTANT_CHANGE: usize = 1024;
