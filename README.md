@@ -119,8 +119,13 @@ make -C lua-5.4.7 linux CC=/path/to/AFLplusplus/afl-cc
 curl -LO https://www.lua.org/tests/lua-5.4.7-tests.tar.gz && tar xzf lua-5.4.7-tests.tar.gz
 mkdir seeds && find lua-5.4.7-tests -name '*.lua' -size -10k -exec cp {} seeds/ \;
 
-cargo run --release --example forkserver -- lua-5.4.7/src/luac ./seeds -t 1000 -- -p @@
+cargo run --release --example forkserver -- lua-5.4.7/src/luac ./seeds -t 100 -- -p @@
 ```
+
+Use a timeout close to what AFL++ chooses for the target (`exec_timeout` in its
+`fuzzer_stats`; 20 ms for `luac -p`). The example does not calibrate one, and a
+long timeout makes slow inputs expensive: on `luac`, `-t 1000` ran at about
+two thirds the speed of `-t 50`.
 
 Here the `-p` after `--` is `luac`'s parse-only flag. To add comby, with a
 server running on the default port, put `-c 0.003` before the `--`.
